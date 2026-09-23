@@ -1,56 +1,127 @@
-import java.util.ArrayList;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 
 public class EmployeeManager
 {
-    private ArrayList<Employee> employees = new ArrayList<>();
-
+    // List to store employees
     public void addEmployee(Employee employee)
     {
-        employees.add(employee);
+        String sql =
+            "INSERT INTO employees (id, name, department, salary) VALUES (?, ?, ?, ?)";
+
+        try
+        {
+            Connection connection = DBConnection.getConnection();
+
+            PreparedStatement statement =
+                connection.prepareStatement(sql);
+
+            statement.setInt(1, employee.getId());
+            statement.setString(2, employee.getName());
+            statement.setString(3, employee.getDepartment());
+            statement.setDouble(4, employee.getSalary());
+
+            statement.executeUpdate();
+
+            System.out.println("Employee added successfully.");
+
+            statement.close();
+            connection.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
-    public void viewEmployees()
+    //
+   public void viewEmployees()
     {
-        if (employees.isEmpty())
-        {
-            System.out.println("No employees found.");
-            return;
-        }
+        String sql = "SELECT * FROM employees";
 
-        for (Employee employee : employees)
+        try
         {
-            employee.displayEmployee();
-        }
-    }
+            Connection connection = DBConnection.getConnection();
 
-    public void searchEmployee(int id)
-    {
-        boolean found = false;
+            PreparedStatement statement =
+                connection.prepareStatement(sql);
 
-        for (Employee employee : employees)
-        {
-            if (employee.getId() == id)
+            var resultSet = statement.executeQuery();
+
+            boolean found = false;
+
+            while (resultSet.next())
             {
                 found = true;
 
-                System.out.println(
-                    "Employee ID Found: "
-                    + employee.getId() + " "
-                    + employee.getName() + " "
-                    + employee.getDepartment() + " "
-                    + employee.getSalary()
-                );
-
-                break;
+                System.out.println("Employee ID: " + resultSet.getInt("id"));
+                System.out.println("Name: " + resultSet.getString("name"));
+                System.out.println("Department: " + resultSet.getString("department"));
+                System.out.println("Salary: " + resultSet.getDouble("salary"));
+                System.out.println("-------------------------");
             }
-        }
 
-        if (!found)
+            if (!found)
+            {
+                System.out.println("No employees found.");
+            }
+
+            resultSet.close();
+            statement.close();
+            connection.close();
+        }
+        catch (Exception e)
         {
-            System.out.println("Employee is not found.");
+            e.printStackTrace();
         }
     }
 
+    // Search for an employee by ID
+    public void searchEmployee(int id)
+    {
+        String sql = "SELECT * FROM employees WHERE id = ?";
+
+        try
+        {
+            Connection connection = DBConnection.getConnection();
+
+            PreparedStatement statement =
+                connection.prepareStatement(sql);
+
+            statement.setInt(1, id);
+
+            var resultSet = statement.executeQuery();
+
+            if (resultSet.next())
+            {
+                System.out.println("Employee ID Found: "
+                    + resultSet.getInt("id"));
+
+                System.out.println("Name: "
+                    + resultSet.getString("name"));
+
+                System.out.println("Department: "
+                    + resultSet.getString("department"));
+
+                System.out.println("Salary: "
+                    + resultSet.getDouble("salary"));
+            }
+            else
+            {
+                System.out.println("Employee is not found.");
+            }
+
+            resultSet.close();
+            statement.close();
+            connection.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    // Update an employee's details by ID
     public void updateEmployee(
         int id,
         String newName,
@@ -58,64 +129,103 @@ public class EmployeeManager
         double newSalary
     )
     {
-        boolean found = false;
+       String sql =
+            "UPDATE employees SET name = ?, department = ?, salary = ? WHERE id = ?";
 
-        for (Employee employee : employees)
+        try
         {
-            if (employee.getId() == id)
+            Connection connection = DBConnection.getConnection();
+
+            PreparedStatement statement =
+                connection.prepareStatement(sql);
+
+            statement.setString(1, newName);
+            statement.setString(2, newDepartment);
+            statement.setDouble(3, newSalary);
+            statement.setInt(4, id);
+
+            int rowsAffected = statement.executeUpdate();
+
+            if (rowsAffected > 0)
             {
-                found = true;
-
-                employee.setName(newName);
-                employee.setDepartment(newDepartment);
-                employee.setSalary(newSalary);
-
                 System.out.println("Employee Updated successfully.");
-
-                break;
             }
-        }
+            else
+            {
+                System.out.println("Employee not found.");
+            }
 
-        if (!found)
+            statement.close();
+            connection.close();
+        }
+        catch (Exception e)
         {
-            System.out.println("Employee not found.");
+            e.printStackTrace();
         }
     }
-
+    
+    // Delete an employee by ID
     public void deleteEmployee(int id)
     {
-        Employee employeeToDelete = null;
+        String sql = "DELETE FROM employees WHERE id = ?";
 
-        for (Employee employee : employees)
+        try
         {
-            if (employee.getId() == id)
+            Connection connection = DBConnection.getConnection();
+            
+            PreparedStatement statement =
+                connection.prepareStatement(sql);
+
+            statement.setInt(1, id);
+
+            int rowsAffected = statement.executeUpdate();
+
+            if (rowsAffected > 0)
             {
-                employeeToDelete = employee;
-                break;
+                System.out.println("Employee Deleted successfully.");
             }
-        }
+            else
+            {
+                System.out.println("Employee not found.");
+            }
 
-        if (employeeToDelete != null)
-        {
-            employees.remove(employeeToDelete);
-            System.out.println("Employee Deleted successfully.");
+            statement.close();
+            connection.close();
         }
-        else
+        catch (Exception e)
         {
-            System.out.println("Employee not found.");
+            e.printStackTrace();
         }
     }
 
+    // Check if an employee ID exists in the database
     public boolean isIdExists(int id)
     {
-        for (Employee employee : employees)
-        {
-            if (employee.getId() == id)
-            {
-                return true;
-            }
-        }
+        String sql = "SELECT id FROM employees WHERE id = ?";
 
-        return false;
+        try
+        {
+            Connection connection = DBConnection.getConnection();
+
+            PreparedStatement statement =
+                connection.prepareStatement(sql);
+
+            statement.setInt(1, id);
+
+            var resultSet = statement.executeQuery();
+
+            boolean exists = resultSet.next();
+
+            resultSet.close();
+            statement.close();
+            connection.close();
+
+            return exists;
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
